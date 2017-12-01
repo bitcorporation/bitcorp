@@ -3,28 +3,24 @@ import './ERC20Token.sol';
 import './TokenHolder.sol';
 
 
-contract ENJToken is ERC20Token, TokenHolder {
+contract BitcorpTokens is ERC20Token, TokenHolder {
 
 ///////////////////////////////////////// VARIABLE INITIALIZATION /////////////////////////////////////////
 
-    uint256 constant public ENJ_UNIT = 10 ** 18;
-    uint256 public totalSupply = 1 * (10**9) * ENJ_UNIT;
+    uint256 constant public BTC_UNIT = 10 ** 18;
+    uint256 public totalSupply = 1 * (10**9) * BTC_UNIT;
 
     //  Constants 
-    uint256 constant public maxPresaleSupply = 600 * 10**6 * ENJ_UNIT;           // Total presale supply at max bonus
-    uint256 constant public minCrowdsaleAllocation = 200 * 10**6 * ENJ_UNIT;     // Min amount for crowdsale
-    uint256 constant public incentivisationAllocation = 100 * 10**6 * ENJ_UNIT;  // Incentivisation Allocation
-    uint256 constant public advisorsAllocation = 26 * 10**6 * ENJ_UNIT;          // Advisors Allocation
-    uint256 constant public enjinTeamAllocation = 74 * 10**6 * ENJ_UNIT;         // Enjin Team allocation
+    uint256 constant public minCrowdsaleAllocation = 200 * 10**6 * BTC_UNIT;     // Min amount for crowdsale
+    uint256 constant public incentivisationAllocation = 100 * 10**6 * BTC_UNIT;  // Incentivisation Allocation
+    uint256 constant public BitcorpTeamAllocation = 74 * 10**6 * BTC_UNIT;         // Bitcorp Team allocation
 
-    address public crowdFundAddress;                                             // Address of the crowdfund
-    address public advisorAddress;                                               // Enjin advisor's address
+    address public crowdFundAddress;                                             // Address of the crowdfun
     address public incentivisationFundAddress;                                   // Address that holds the incentivization funds
-    address public enjinTeamAddress;                                             // Enjin Team address
+    address public BitcorpTeamAddress;                                             // Bitcorpin Team address
 
     //  Variables
-
-    uint256 public totalAllocatedToAdvisors = 0;                                 // Counter to keep track of advisor token allocation
+    
     uint256 public totalAllocatedToTeam = 0;                                     // Counter to keep track of team token allocation
     uint256 public totalAllocated = 0;                                           // Counter to keep track of overall token allocation
     uint256 constant public endTime = 1509494340;                                // 10/31/2017 @ 11:59pm (UTC) crowdsale end time (in seconds)
@@ -36,17 +32,10 @@ contract ENJToken is ERC20Token, TokenHolder {
 
 ///////////////////////////////////////// MODIFIERS /////////////////////////////////////////
 
-    // Enjin Team timelock    
+    // Bitcorp Team timelock    
     modifier safeTimelock() {
         require(now >= endTime + 6 * 4 weeks);
         _;
-    }
-
-    // Advisor Team timelock    
-    modifier advisorTimelock() {
-        require(now >= endTime + 2 * 4 weeks);
-        _;
-    }
 
     // Function only accessible by the Crowdfund contract
     modifier crowdfundOnly() {
@@ -59,14 +48,12 @@ contract ENJToken is ERC20Token, TokenHolder {
     /**
         @dev constructor
         @param _crowdFundAddress   Crowdfund address
-        @param _advisorAddress     Advisor address
     */
-    function ENJToken(address _crowdFundAddress, address _advisorAddress, address _incentivisationFundAddress, address _enjinTeamAddress)
-    ERC20Token("Enjin Coin", "ENJ", 18)
+    function BitcorpTokens(address _crowdFundAddress, address _incentivisationFundAddress, address _bitcorpTeamAddress)
+    ERC20Token("Bitcoin 21", "BTC21", 18)
      {
         crowdFundAddress = _crowdFundAddress;
-        advisorAddress = _advisorAddress;
-        enjinTeamAddress = _enjinTeamAddress;
+        bitcorpTeamAddress = _bitcorpTeamAddress;
         incentivisationFundAddress = _incentivisationFundAddress;
         balanceOf[_crowdFundAddress] = minCrowdsaleAllocation + maxPresaleSupply; // Total presale + crowdfund tokens
         balanceOf[_incentivisationFundAddress] = incentivisationAllocation;       // 10% Allocated for Marketing and Incentivisation
@@ -113,57 +100,25 @@ contract ENJToken is ERC20Token, TokenHolder {
     }
 
 ///////////////////////////////////////// ALLOCATION FUNCTIONS /////////////////////////////////////////
-
-    /**
-        @dev Release one single tranche of the Enjin Team Token allocation
-        throws if before timelock (6 months) ends and if not initiated by the owner of the contract
-        returns true if valid
-        Schedule goes as follows:
-        3 months: 12.5% (this tranche can only be released after the initial 6 months has passed)
-        6 months: 12.5%
-        9 months: 12.5%
-        12 months: 12.5%
-        15 months: 12.5%
-        18 months: 12.5%
-        21 months: 12.5%
-        24 months: 12.5%
-        @return true if successful, throws if not
+        
     */
-    function releaseEnjinTeamTokens() safeTimelock ownerOnly returns(bool success) {
-        require(totalAllocatedToTeam < enjinTeamAllocation);
+    function releaseBitcorpTeamTokens() safeTimelock ownerOnly returns(bool success) {
+        require(totalAllocatedToTeam < BitcorpTeamAllocation);
 
-        uint256 enjinTeamAlloc = enjinTeamAllocation / 1000;
+        uint256 bitcorpTeamAlloc = bitcorpTeamAllocation / 1000;
         uint256 currentTranche = uint256(now - endTime) / 12 weeks;     // "months" after crowdsale end time (division floored)
 
         if(teamTranchesReleased < maxTeamTranches && currentTranche > teamTranchesReleased) {
             teamTranchesReleased++;
 
-            uint256 amount = safeMul(enjinTeamAlloc, 125);
-            balanceOf[enjinTeamAddress] = safeAdd(balanceOf[enjinTeamAddress], amount);
-            Transfer(0x0, enjinTeamAddress, amount);
+            uint256 amount = safeMul(bitcorpnTeamAlloc, 125);
+            balanceOf[bitcorpTeamAddress] = safeAdd(balanceOf[bitcorpTeamAddress], amount);
+            Transfer(0x0, bitcorpTeamAddress, amount);
             totalAllocated = safeAdd(totalAllocated, amount);
             totalAllocatedToTeam = safeAdd(totalAllocatedToTeam, amount);
             return true;
         }
-        revert();
-    }
-
-    /**
-        @dev release Advisors Token allocation
-        throws if before timelock (2 months) ends or if no initiated by the advisors address
-        or if there is no more allocation to give out
-        returns true if valid
-
-        @return true if successful, throws if not
-    */
-    function releaseAdvisorTokens() advisorTimelock ownerOnly returns(bool success) {
-        require(totalAllocatedToAdvisors == 0);
-        balanceOf[advisorAddress] = safeAdd(balanceOf[advisorAddress], advisorsAllocation);
-        totalAllocated = safeAdd(totalAllocated, advisorsAllocation);
-        totalAllocatedToAdvisors = advisorsAllocation;
-        Transfer(0x0, advisorAddress, advisorsAllocation);
-        return true;
-    }
+        revert()
 
     /**
         @dev Retrieve unsold tokens from the crowdfund
